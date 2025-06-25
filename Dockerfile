@@ -1,53 +1,56 @@
-# Use PHP 8.2 with Apache
-FROM php:8.2-cli
+# Use a proven Laravel-ready PHP image
+FROM php:8.2-fpm-alpine
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
+# Install system dependencies and PHP extensions
+RUN apk add --no-cache \
+    bash \
     curl \
+    git \
     libpng-dev \
-    libonig-dev \
-    libxml2-dev \
+    libzip-dev \
+    oniguruma-dev \
     zip \
     unzip \
     nodejs \
-    npm
+    npm \
+    && docker-php-ext-install \
+        pdo_mysql \
+        mbstring \
+        zip \
+        gd \
+        bcmath \
+        pcntl
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
-
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /app
 
-# Copy composer files
+# Copy and install composer dependencies first (for better Docker layer caching)
 COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Copy package.json and install npm dependencies
+# Copy and install npm dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
-# Build assets
+# Complete composer installation
+RUN composer dump-autoload --optimize
+
+# Build frontend assets
 RUN npm run build
 
-# Create required directories and set permissions
-RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache && \
-    chmod -R 775 storage bootstrap/cache && \
-    chmod +x start.sh
+# Set up Laravel
+RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache public/storage \
+    && chmod -R 775 storage bootstrap/cache \
+    && chmod +x start.sh
 
-# Expose port
-EXPOSE $PORT
+# Use the start script
+CMD ["./start.sh"]
 
 # Start command
 CMD ["./start.sh"]
