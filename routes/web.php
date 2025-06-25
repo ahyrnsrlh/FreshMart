@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\OrderController;
 
@@ -41,4 +42,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/orders/{transaction}', [CustomerController::class, 'showOrder'])->name('customer.order.show');
     Route::get('/payment/{transaction}', [CustomerController::class, 'showPayment'])->name('customer.payment.show');
     Route::post('/payment/{transaction}', [CustomerController::class, 'processPayment'])->name('customer.payment.process');
+});
+
+// Health check route for Railway
+Route::get('/health', function () {
+    try {
+        // Test database connection
+        DB::connection()->getPdo();
+        $dbStatus = 'connected';
+    } catch (Exception $e) {
+        $dbStatus = 'disconnected';
+    }
+    
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now(),
+        'database' => $dbStatus,
+        'env' => app()->environment(),
+    ], 200, [], JSON_UNESCAPED_SLASHES);
 });
