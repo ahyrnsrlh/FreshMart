@@ -1,0 +1,15 @@
+node_modules/
+.git/
+.env
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+bootstrap/cache/
+public/hot
+public/storage
+resources/sass/
+tests/
+.phpunit.result.cache
+.DS_Store
+Thumbs.db
