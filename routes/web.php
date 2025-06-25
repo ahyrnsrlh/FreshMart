@@ -44,24 +44,25 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/{transaction}', [CustomerController::class, 'processPayment'])->name('customer.payment.process');
 });
 
-// Health check route for Railway (simplified)
+// Health check route for Railway (ultra simple)
 Route::get('/health', function () {
+    return response('OK', 200)
+        ->header('Content-Type', 'text/plain');
+});
+
+// JSON health check
+Route::get('/health/json', function () {
     try {
-        // Basic health check without database dependency
         return response()->json([
             'status' => 'healthy',
-            'timestamp' => now()->toISOString(),
-            'app_name' => config('app.name', 'FreshMart'),
-            'env' => app()->environment(),
-            'php_version' => PHP_VERSION,
-            'laravel_version' => app()->version(),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'app' => 'FreshMart',
         ], 200);
         
     } catch (Exception $e) {
         return response()->json([
             'status' => 'unhealthy',
             'error' => $e->getMessage(),
-            'timestamp' => now()->toISOString(),
         ], 500);
     }
 });

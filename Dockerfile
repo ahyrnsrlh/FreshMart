@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libonig-dev \
+    netcat-traditional \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install essential PHP extensions for Laravel (minimal set)
@@ -26,25 +27,39 @@ COPY . .
 RUN composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts || \
     (rm -f composer.lock && composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts)
 
-# Create simple start script with better error handling and debugging
+# Create comprehensive start script with maximum debugging and port verification
 RUN echo '#!/bin/bash' > /app/simple-start.sh && \
-    echo 'set -e' >> /app/simple-start.sh && \
+    echo 'set -x' >> /app/simple-start.sh && \
     echo 'export PORT=${PORT:-8000}' >> /app/simple-start.sh && \
-    echo 'echo "🚀 Starting FreshMart on port $PORT"' >> /app/simple-start.sh && \
-    echo 'echo "Environment: $(printenv | grep -E "(PORT|APP_|DB_|RAILWAY_)" | head -5)"' >> /app/simple-start.sh && \
+    echo 'echo "🚀 FreshMart Starting on port: $PORT"' >> /app/simple-start.sh && \
+    echo 'echo "🌍 Environment variables:"' >> /app/simple-start.sh && \
+    echo 'printenv | grep -E "(PORT|RAILWAY_)" | head -10' >> /app/simple-start.sh && \
+    echo 'echo "📋 Current directory: $(pwd)"' >> /app/simple-start.sh && \
+    echo 'echo "📁 Key files check:"' >> /app/simple-start.sh && \
+    echo 'ls -la artisan public/index.php bootstrap/app.php || true' >> /app/simple-start.sh && \
+    echo 'echo "🔧 PHP Version:"' >> /app/simple-start.sh && \
+    echo 'php --version' >> /app/simple-start.sh && \
+    echo 'echo "📦 Creating directories..."' >> /app/simple-start.sh && \
     echo 'mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache' >> /app/simple-start.sh && \
-    echo 'chmod -R 775 storage bootstrap/cache 2>/dev/null || true' >> /app/simple-start.sh && \
-    echo 'echo "📋 Clearing Laravel caches..."' >> /app/simple-start.sh && \
-    echo 'php artisan config:clear 2>/dev/null || true' >> /app/simple-start.sh && \
-    echo 'echo "🗄️ Running migrations..."' >> /app/simple-start.sh && \
-    echo 'php artisan migrate --force 2>/dev/null || echo "⚠️ Migration failed, continuing..."' >> /app/simple-start.sh && \
-    echo 'echo "⚡ Caching config..."' >> /app/simple-start.sh && \
-    echo 'php artisan config:cache 2>/dev/null || true' >> /app/simple-start.sh && \
-    echo 'echo "✅ Laravel setup complete, starting server on 0.0.0.0:$PORT"' >> /app/simple-start.sh && \
-    echo 'echo "🔍 Testing basic Laravel..."' >> /app/simple-start.sh && \
-    echo 'php artisan --version' >> /app/simple-start.sh && \
-    echo 'echo "🌐 Starting web server..."' >> /app/simple-start.sh && \
-    echo 'exec php artisan serve --host=0.0.0.0 --port=$PORT' >> /app/simple-start.sh && \
+    echo 'chmod -R 777 storage bootstrap/cache 2>/dev/null || true' >> /app/simple-start.sh && \
+    echo 'echo "🧹 Laravel commands..."' >> /app/simple-start.sh && \
+    echo 'php artisan --version || echo "Artisan failed"' >> /app/simple-start.sh && \
+    echo 'php artisan config:clear 2>/dev/null || echo "Config clear failed"' >> /app/simple-start.sh && \
+    echo 'echo "🔍 Port availability check:"' >> /app/simple-start.sh && \
+    echo 'netstat -ln | grep ":$PORT " || echo "Port $PORT is available"' >> /app/simple-start.sh && \
+    echo 'echo "🌐 Starting server on 0.0.0.0:$PORT"' >> /app/simple-start.sh && \
+    echo 'php artisan serve --host=0.0.0.0 --port=$PORT &' >> /app/simple-start.sh && \
+    echo 'SERVER_PID=$!' >> /app/simple-start.sh && \
+    echo 'echo "🔥 Server started with PID: $SERVER_PID"' >> /app/simple-start.sh && \
+    echo 'sleep 3' >> /app/simple-start.sh && \
+    echo 'echo "🔍 Port check after server start:"' >> /app/simple-start.sh && \
+    echo 'netstat -ln | grep ":$PORT " || echo "❌ Server not listening on port $PORT"' >> /app/simple-start.sh && \
+    echo 'echo "🧪 Testing local health check..."' >> /app/simple-start.sh && \
+    echo 'curl -f http://localhost:$PORT/health && echo "✅ Health check passed!" || echo "❌ Health check failed"' >> /app/simple-start.sh && \
+    echo 'echo "📊 Process status:"' >> /app/simple-start.sh && \
+    echo 'ps aux | grep artisan || true' >> /app/simple-start.sh && \
+    echo 'echo "✅ Keeping server running..."' >> /app/simple-start.sh && \
+    echo 'wait $SERVER_PID' >> /app/simple-start.sh && \
     chmod +x /app/simple-start.sh
 
 # Use simple start script
