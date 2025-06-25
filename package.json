@@ -3,9 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build --mode production",
-        "dev": "vite",
-        "postinstall": "npm run build"
+        "build": "vite build",
+        "dev": "vite"
     },
     "devDependencies": {
         "@popperjs/core": "^2.11.6",
