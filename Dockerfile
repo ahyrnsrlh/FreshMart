@@ -9,17 +9,22 @@ RUN apk add --no-cache \
     libpng-dev \
     libzip-dev \
     oniguruma-dev \
+    icu-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
     zip \
     unzip \
     nodejs \
     npm \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
         mbstring \
         zip \
         gd \
         bcmath \
-        pcntl
+        pcntl \
+        intl
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -50,7 +55,4 @@ RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cac
     && chmod +x start.sh
 
 # Use the start script
-CMD ["./start.sh"]
-
-# Start command
 CMD ["./start.sh"]
