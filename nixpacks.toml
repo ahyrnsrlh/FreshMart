@@ -1,8 +1,9 @@
 [phases.setup]
-nixPkgs = ["php82", "nodejs-18_x"]
+nixPkgs = ["php82Extensions.mbstring", "php82Extensions.pdo", "php82Extensions.pdo_mysql", "php82Extensions.curl", "php82Extensions.gd", "php82Extensions.zip", "php82Extensions.dom", "php82Extensions.xml", "nodejs-18_x"]
 
 [phases.install]
 cmds = [
+    "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer",
     "composer install --no-dev --optimize-autoloader --no-interaction",
     "npm ci"
 ]
@@ -12,8 +13,8 @@ cmds = [
     "npm run build",
     "mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache",
     "chmod -R 775 storage bootstrap/cache",
-    "chmod +x start.sh deploy.sh"
+    "chmod +x start.sh"
 ]
 
 [start]
-cmd = "./deploy.sh"
+cmd = "./start.sh"
