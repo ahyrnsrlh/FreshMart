@@ -11,4 +11,19 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        manifest: true,
+        outDir: 'public/build',
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+            },
+        },
+        chunkSizeWarningLimit: 1000,
+    },
+    server: {
+        hmr: {
+            host: 'localhost',
+        },
+    },
 });
