@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["php82", "nodejs-18_x"]
+
+[phases.install]
+cmds = [
+    "composer install --no-dev --optimize-autoloader --no-interaction",
+    "npm ci"
+]
+
+[phases.build]
+cmds = [
+    "npm run build",
+    "mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache",
+    "chmod -R 775 storage bootstrap/cache",
+    "chmod +x start.sh deploy.sh"
+]
+
+[start]
+cmd = "./deploy.sh"

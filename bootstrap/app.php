@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Add TrustProxies to global middleware for Railway deployment
+        $middleware->web(append: [
+            \App\Http\Middleware\TrustProxies::class,
+        ]);
+        
         $middleware->alias([
             'check.admin' => \App\Http\Middleware\CheckAdminAccess::class,
         ]);
