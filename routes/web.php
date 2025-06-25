@@ -50,14 +50,25 @@ Route::get('/health', function () {
         // Test database connection
         DB::connection()->getPdo();
         $dbStatus = 'connected';
+        
+        // Test basic Laravel functionality
+        $configTest = config('app.name');
+        
+        return response()->json([
+            'status' => 'healthy',
+            'timestamp' => now()->toISOString(),
+            'database' => $dbStatus,
+            'app_name' => $configTest,
+            'env' => app()->environment(),
+            'php_version' => PHP_VERSION,
+            'laravel_version' => app()->version(),
+        ], 200);
+        
     } catch (Exception $e) {
-        $dbStatus = 'disconnected';
+        return response()->json([
+            'status' => 'unhealthy',
+            'error' => $e->getMessage(),
+            'timestamp' => now()->toISOString(),
+        ], 500);
     }
-    
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now(),
-        'database' => $dbStatus,
-        'env' => app()->environment(),
-    ], 200, [], JSON_UNESCAPED_SLASHES);
 });

@@ -3,10 +3,10 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "php artisan serve --host=0.0.0.0 --port=$PORT",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 120,
+    "startCommand": "bash bootstrap-railway.sh",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 180,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 5
+    "restartPolicyMaxRetries": 2
   }
 }
