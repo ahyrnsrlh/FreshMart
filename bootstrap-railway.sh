@@ -49,5 +49,9 @@ php artisan view:cache
 echo "✅ Bootstrap completed successfully!"
 
 # Start the server
-echo "🌐 Starting Laravel server on port $PORT..."
-php artisan serve --host=0.0.0.0 --port=$PORT
+echo "🌐 Starting Laravel server..."
+echo "Port: ${PORT:-8000}"
+echo "Host: 0.0.0.0"
+
+# Use Railway's assigned port
+php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
