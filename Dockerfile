@@ -27,11 +27,14 @@ COPY . .
 RUN composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts || \
     (rm -f composer.lock && composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts)
 
-# Create comprehensive start script with maximum debugging and port verification
+# Create comprehensive start script with port type fixing
 RUN echo '#!/bin/bash' > /app/simple-start.sh && \
     echo 'set -x' >> /app/simple-start.sh && \
-    echo 'export PORT=${PORT:-8000}' >> /app/simple-start.sh && \
-    echo 'echo "🚀 FreshMart Starting on port: $PORT"' >> /app/simple-start.sh && \
+    echo '# Fix PORT type conversion issue' >> /app/simple-start.sh && \
+    echo 'export PORT_RAW=${PORT:-8000}' >> /app/simple-start.sh && \
+    echo 'export PORT=$(echo $PORT_RAW | sed "s/[^0-9]//g")' >> /app/simple-start.sh && \
+    echo '[ -z "$PORT" ] && export PORT=8000' >> /app/simple-start.sh && \
+    echo 'echo "🚀 FreshMart Starting on port: $PORT (raw: $PORT_RAW)"' >> /app/simple-start.sh && \
     echo 'echo "🌍 Environment variables:"' >> /app/simple-start.sh && \
     echo 'printenv | grep -E "(PORT|RAILWAY_)" | head -10' >> /app/simple-start.sh && \
     echo 'echo "📋 Current directory: $(pwd)"' >> /app/simple-start.sh && \
@@ -45,10 +48,10 @@ RUN echo '#!/bin/bash' > /app/simple-start.sh && \
     echo 'echo "🧹 Laravel commands..."' >> /app/simple-start.sh && \
     echo 'php artisan --version || echo "Artisan failed"' >> /app/simple-start.sh && \
     echo 'php artisan config:clear 2>/dev/null || echo "Config clear failed"' >> /app/simple-start.sh && \
-    echo 'echo "🔍 Port availability check:"' >> /app/simple-start.sh && \
-    echo 'netstat -ln | grep ":$PORT " || echo "Port $PORT is available"' >> /app/simple-start.sh && \
+    echo 'echo "🔍 Port validation: PORT=$PORT (should be numeric)"' >> /app/simple-start.sh && \
+    echo 'echo "$PORT" | grep -q "^[0-9]*$" && echo "✅ Port is numeric" || echo "❌ Port is not numeric"' >> /app/simple-start.sh && \
     echo 'echo "🌐 Starting server on 0.0.0.0:$PORT"' >> /app/simple-start.sh && \
-    echo 'php artisan serve --host=0.0.0.0 --port=$PORT &' >> /app/simple-start.sh && \
+    echo 'php artisan serve --host=0.0.0.0 --port="$PORT" &' >> /app/simple-start.sh && \
     echo 'SERVER_PID=$!' >> /app/simple-start.sh && \
     echo 'echo "🔥 Server started with PID: $SERVER_PID"' >> /app/simple-start.sh && \
     echo 'sleep 3' >> /app/simple-start.sh && \
