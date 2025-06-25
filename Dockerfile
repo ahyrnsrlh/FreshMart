@@ -1,59 +1,36 @@
-# Use Ubuntu-based PHP image for better compatibility
+# Simple Laravel Docker setup for Railway
 FROM php:8.2-cli
 
-# Install system dependencies
+# Install minimal system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libicu-dev \
     zip \
     unzip \
-    nodejs \
-    npm
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-configure intl \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd intl
+# Install only essential PHP extensions
+RUN docker-php-ext-install pdo_mysql
 
-# Get latest Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Clean up
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Set working directory
 WORKDIR /app
 
-# Copy composer files and install dependencies
-COPY composer.json composer.lock ./
-
-# Debug: Check PHP version and extensions
-RUN php --version && php -m
-
-# Install dependencies with verbose output for debugging
-RUN composer install --no-dev --no-interaction --ignore-platform-reqs --verbose || \
-    (echo "Composer install failed, trying without lock file..." && \
-     rm -f composer.lock && \
-     composer install --no-dev --no-interaction --ignore-platform-reqs)
-
-# Copy package.json and install npm dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy the rest of the application code
+# Copy everything
 COPY . .
 
-# Build frontend assets
-RUN npm run build
+# Install composer dependencies with minimal requirements
+RUN composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts || \
+    (rm -f composer.lock && composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts)
 
-# Set up Laravel
-RUN mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache public/storage \
-    && chmod -R 775 storage bootstrap/cache \
-    && chmod +x start.sh
+# Create simple start script
+RUN echo '#!/bin/bash' > /app/simple-start.sh && \
+    echo 'php artisan migrate --force 2>/dev/null || true' >> /app/simple-start.sh && \
+    echo 'php artisan config:cache 2>/dev/null || true' >> /app/simple-start.sh && \
+    echo 'exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}' >> /app/simple-start.sh && \
+    chmod +x /app/simple-start.sh
 
-# Use the start script
-CMD ["./start.sh"]
+# Use simple start script
+CMD ["/app/simple-start.sh"]
