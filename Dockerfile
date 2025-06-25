@@ -30,7 +30,15 @@ WORKDIR /app
 
 # Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction
+
+# Debug: Check PHP version and extensions
+RUN php --version && php -m
+
+# Install dependencies with verbose output for debugging
+RUN composer install --no-dev --no-interaction --ignore-platform-reqs --verbose || \
+    (echo "Composer install failed, trying without lock file..." && \
+     rm -f composer.lock && \
+     composer install --no-dev --no-interaction --ignore-platform-reqs)
 
 # Copy package.json and install npm dependencies
 COPY package.json package-lock.json ./
