@@ -32,19 +32,16 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /app
 
-# Copy and install composer dependencies first (for better Docker layer caching)
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Copy and install npm dependencies
+# Copy package.json and install npm dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy application code
+# Copy the rest of the application code
 COPY . .
-
-# Complete composer installation
-RUN composer dump-autoload --optimize
 
 # Build frontend assets
 RUN npm run build
