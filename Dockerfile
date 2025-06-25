@@ -1,40 +1,36 @@
-# Use a proven Laravel-ready PHP image
-FROM php:8.2-fpm-alpine
+# Use Ubuntu-based PHP image for better compatibility
+FROM php:8.2-cli
 
-# Install system dependencies and PHP extensions
-RUN apk add --no-cache \
-    bash \
-    curl \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     git \
+    curl \
     libpng-dev \
+    libonig-dev \
+    libxml2-dev \
     libzip-dev \
-    oniguruma-dev \
-    icu-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
+    libicu-dev \
     zip \
     unzip \
     nodejs \
-    npm \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-        pdo_mysql \
-        mbstring \
-        zip \
-        gd \
-        bcmath \
-        pcntl \
-        intl
+    npm
 
-# Install Composer
+# Install PHP extensions
+RUN docker-php-ext-configure intl \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd intl
+
+# Get latest Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Clean up
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
 # Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --no-interaction
 
 # Copy package.json and install npm dependencies
 COPY package.json package-lock.json ./
