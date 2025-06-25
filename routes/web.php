@@ -44,21 +44,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/{transaction}', [CustomerController::class, 'processPayment'])->name('customer.payment.process');
 });
 
-// Health check route for Railway
+// Health check route for Railway (simplified)
 Route::get('/health', function () {
     try {
-        // Test database connection
-        DB::connection()->getPdo();
-        $dbStatus = 'connected';
-        
-        // Test basic Laravel functionality
-        $configTest = config('app.name');
-        
+        // Basic health check without database dependency
         return response()->json([
             'status' => 'healthy',
             'timestamp' => now()->toISOString(),
-            'database' => $dbStatus,
-            'app_name' => $configTest,
+            'app_name' => config('app.name', 'FreshMart'),
             'env' => app()->environment(),
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
@@ -67,6 +60,25 @@ Route::get('/health', function () {
     } catch (Exception $e) {
         return response()->json([
             'status' => 'unhealthy',
+            'error' => $e->getMessage(),
+            'timestamp' => now()->toISOString(),
+        ], 500);
+    }
+});
+
+// Database health check (separate endpoint)
+Route::get('/health/db', function () {
+    try {
+        // Test database connection
+        DB::connection()->getPdo();
+        return response()->json([
+            'status' => 'database_healthy',
+            'timestamp' => now()->toISOString(),
+        ], 200);
+        
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'database_unhealthy',
             'error' => $e->getMessage(),
             'timestamp' => now()->toISOString(),
         ], 500);
