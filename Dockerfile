@@ -27,7 +27,7 @@ COPY . .
 RUN composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts || \
     (rm -f composer.lock && composer install --no-dev --no-interaction --ignore-platform-reqs --no-scripts)
 
-# Create comprehensive start script with port type fixing
+# Create start script using PHP built-in server directly (bypass artisan serve)
 RUN echo '#!/bin/bash' > /app/simple-start.sh && \
     echo 'set -x' >> /app/simple-start.sh && \
     echo '# Fix PORT type conversion issue' >> /app/simple-start.sh && \
@@ -37,21 +37,18 @@ RUN echo '#!/bin/bash' > /app/simple-start.sh && \
     echo 'echo "🚀 FreshMart Starting on port: $PORT (raw: $PORT_RAW)"' >> /app/simple-start.sh && \
     echo 'echo "🌍 Environment variables:"' >> /app/simple-start.sh && \
     echo 'printenv | grep -E "(PORT|RAILWAY_)" | head -10' >> /app/simple-start.sh && \
-    echo 'echo "📋 Current directory: $(pwd)"' >> /app/simple-start.sh && \
-    echo 'echo "📁 Key files check:"' >> /app/simple-start.sh && \
-    echo 'ls -la artisan public/index.php bootstrap/app.php || true' >> /app/simple-start.sh && \
-    echo 'echo "🔧 PHP Version:"' >> /app/simple-start.sh && \
-    echo 'php --version' >> /app/simple-start.sh && \
     echo 'echo "📦 Creating directories..."' >> /app/simple-start.sh && \
     echo 'mkdir -p storage/logs storage/framework/{cache,sessions,views} bootstrap/cache' >> /app/simple-start.sh && \
     echo 'chmod -R 777 storage bootstrap/cache 2>/dev/null || true' >> /app/simple-start.sh && \
-    echo 'echo "🧹 Laravel commands..."' >> /app/simple-start.sh && \
-    echo 'php artisan --version || echo "Artisan failed"' >> /app/simple-start.sh && \
-    echo 'php artisan config:clear 2>/dev/null || echo "Config clear failed"' >> /app/simple-start.sh && \
+    echo 'echo "🧹 Laravel setup..."' >> /app/simple-start.sh && \
+    echo 'php artisan config:clear 2>/dev/null || true' >> /app/simple-start.sh && \
+    echo 'php artisan migrate --force 2>/dev/null || echo "Migration skipped"' >> /app/simple-start.sh && \
+    echo 'php artisan config:cache 2>/dev/null || true' >> /app/simple-start.sh && \
     echo 'echo "🔍 Port validation: PORT=$PORT (should be numeric)"' >> /app/simple-start.sh && \
     echo 'echo "$PORT" | grep -q "^[0-9]*$" && echo "✅ Port is numeric" || echo "❌ Port is not numeric"' >> /app/simple-start.sh && \
-    echo 'echo "🌐 Starting server on 0.0.0.0:$PORT"' >> /app/simple-start.sh && \
-    echo 'php artisan serve --host=0.0.0.0 --port="$PORT" &' >> /app/simple-start.sh && \
+    echo 'echo "🌐 Starting PHP built-in server on 0.0.0.0:$PORT"' >> /app/simple-start.sh && \
+    echo 'cd /app/public' >> /app/simple-start.sh && \
+    echo 'php -S 0.0.0.0:$PORT -t . ../server.php &' >> /app/simple-start.sh && \
     echo 'SERVER_PID=$!' >> /app/simple-start.sh && \
     echo 'echo "🔥 Server started with PID: $SERVER_PID"' >> /app/simple-start.sh && \
     echo 'sleep 3' >> /app/simple-start.sh && \
@@ -60,7 +57,7 @@ RUN echo '#!/bin/bash' > /app/simple-start.sh && \
     echo 'echo "🧪 Testing local health check..."' >> /app/simple-start.sh && \
     echo 'curl -f http://localhost:$PORT/health && echo "✅ Health check passed!" || echo "❌ Health check failed"' >> /app/simple-start.sh && \
     echo 'echo "📊 Process status:"' >> /app/simple-start.sh && \
-    echo 'ps aux | grep artisan || true' >> /app/simple-start.sh && \
+    echo 'ps aux | grep php || true' >> /app/simple-start.sh && \
     echo 'echo "✅ Keeping server running..."' >> /app/simple-start.sh && \
     echo 'wait $SERVER_PID' >> /app/simple-start.sh && \
     chmod +x /app/simple-start.sh
